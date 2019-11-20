@@ -24,22 +24,33 @@ func NewRedisBrain(rc iredis.Client) (*RedisBrain, error) {
 }
 
 func (br *RedisBrain) Load(ctx context.Context, key string) ([]byte, error) {
-	c := br.rc.WithContext(ctx)
-	v, err := c.Get(key).Bytes()
+	cmd := br.rc.Get(key)
+
+	err := br.rc.ProcessContext(ctx, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("getting from redis: %w", err)
+	}
+
+	v, err := cmd.Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("getting value for key='%s': %w", key, err)
+		return nil, fmt.Errorf("converting fetched result: %w", key, err)
 	}
 	return v, err
 }
 
 func (br *RedisBrain) Save(ctx context.Context, key string, val []byte) error {
-	c := br.rc.WithContext(ctx)
-	err := c.Set(key, val, 0).Err()
+	cmd := br.rc.Set(key, val, 0)
+
+	err := br.rc.ProcessContext(ctx, cmd)
 	if err != nil {
-		return fmt.Errorf("setting value for key='%s': %w", key, err)
+		return fmt.Errorf("setting value into redis: %w", err)
+	}
+	err = cmd.Err()
+	if err != nil {
+		return fmt.Errorf("setting value into redis: %w", err)
 	}
 	return nil
 }

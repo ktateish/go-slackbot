@@ -3,6 +3,7 @@ module github.com/ktateish/go-slackbot
 go 1.13
 
 require (
+	github.com/aws/aws-sdk-go v1.25.43
 	github.com/go-redis/redis/v7 v7.0.0-beta.4
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249

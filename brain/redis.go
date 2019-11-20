@@ -35,6 +35,9 @@ func (br *RedisBrain) Load(ctx context.Context, key string) ([]byte, error) {
 
 	err := br.rc.ProcessContext(ctx, cmd)
 	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			err = ErrNotFound
+		}
 		return nil, fmt.Errorf("getting from redis: %w", err)
 	}
 

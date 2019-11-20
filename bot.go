@@ -306,8 +306,8 @@ func (res *Response) Send(ctx context.Context, msg string) error {
 }
 
 type Brain interface {
-	Load(key string) ([]byte, error)
-	Save(key string, val []byte) error
+	Load(ctx context.Context, key string) ([]byte, error)
+	Save(ctx context.Context, key string, val []byte) error
 }
 
 func NewBrain() (Brain, error) {

@@ -1,6 +1,7 @@
 package brain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -22,8 +23,9 @@ func NewRedisBrain(rc iredis.Client) (*RedisBrain, error) {
 	}, nil
 }
 
-func (br *RedisBrain) Load(key string) ([]byte, error) {
-	v, err := br.rc.Get(key).Bytes()
+func (br *RedisBrain) Load(ctx context.Context, key string) ([]byte, error) {
+	c := br.rc.WithContext(ctx)
+	v, err := c.Get(key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			err = ErrNotFound
@@ -33,8 +35,9 @@ func (br *RedisBrain) Load(key string) ([]byte, error) {
 	return v, err
 }
 
-func (br *RedisBrain) Save(key string, val []byte) error {
-	err := br.rc.Set(key, val, 0).Err()
+func (br *RedisBrain) Save(ctx context.Context, key string, val []byte) error {
+	c := br.rc.WithContext(ctx)
+	err := c.Set(key, val, 0).Err()
 	if err != nil {
 		return fmt.Errorf("setting value for key='%s': %w", key, err)
 	}

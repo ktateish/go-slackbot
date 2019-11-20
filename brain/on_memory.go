@@ -1,6 +1,7 @@
 package brain
 
 import (
+	"context"
 	"fmt"
 )
 
@@ -14,7 +15,7 @@ func NewOnMemoryBrain() *OnMemoryBrain {
 	}
 }
 
-func (br *OnMemoryBrain) Load(key string) ([]byte, error) {
+func (br *OnMemoryBrain) Load(_ context.Context, key string) ([]byte, error) {
 	v, ok := br.db[key]
 	if !ok {
 		return nil, fmt.Errorf("key='%s': %w", key, ErrNotFound)
@@ -22,7 +23,7 @@ func (br *OnMemoryBrain) Load(key string) ([]byte, error) {
 	return v, nil
 }
 
-func (br *OnMemoryBrain) Save(key string, val []byte) error {
+func (br *OnMemoryBrain) Save(_ context.Context, key string, val []byte) error {
 	br.db[key] = val
 	return nil
 }

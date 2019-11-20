@@ -12,7 +12,6 @@ import (
 	"unsafe"
 
 	"github.com/ktateish/go-slackbot/brain"
-	"github.com/ktateish/go-slackbot/iface/islack"
 	"github.com/nlopes/slack"
 )
 
@@ -24,9 +23,14 @@ func assert(exp bool) {
 	panic(fmt.Sprintf("ASSERT!!: %s:%d @0x%x\n", file, line, pc))
 }
 
+type RTM interface {
+	SendMessageContext(ctx context.Context, channel string, opts ...slack.MsgOption) (string, string, string, error)
+	ManageConnection()
+}
+
 // Bot represents a slack bot framework
 type Bot struct {
-	islack.RTM
+	RTM
 	logger *log.Logger
 	info   *slack.Info
 	brain  Brain
@@ -37,9 +41,15 @@ type Bot struct {
 	responds []func(*slack.Message) error
 }
 
-// NewBot creates a Bot instance
-func NewBot(rtm islack.RTM) (*Bot, error) {
-	brain, err := NewBrain()
+// New creates a Bot instance with token
+func New(token string) (*Bot, error) {
+	rtm := slack.New(token).NewRTM()
+	return NewBot(rtm)
+}
+
+// NewBot creates a Bot instance with RTM interface
+func NewBot(rtm RTM) (*Bot, error) {
+	brain, err := newBrain()
 	if err != nil {
 		return nil, fmt.Errorf("getting new brain: %w", err)
 	}
@@ -49,14 +59,19 @@ func NewBot(rtm islack.RTM) (*Bot, error) {
 	}, nil
 }
 
+// OnLoad registers an action that will be proceeded on loading
 func (bot *Bot) OnLoaded(action func(bot *Bot) error) {
 	bot.onLoads = append(bot.onLoads, action)
 }
 
+// Brain gets Brain in the bot
 func (bot *Bot) Brain() Brain {
 	return bot.brain
 }
 
+// SetBrain sets br to the bot as its Brain.
+// The default brain is brain.OnMemoryBrain so the bot forgets all its memory
+// on exit.
 func (bot *Bot) SetBrain(br Brain) {
 	bot.brain = br
 }
@@ -125,7 +140,7 @@ func (bot *Bot) Hear(re *regexp.Regexp, action func(ctx context.Context, res *Re
 			return nil
 		}
 		res := bot.NewResponse(msg)
-		res.SetMatch(match)
+		res.setMatch(match)
 		return action(context.Background(), res)
 	}
 	bot.hears = append(bot.hears, f)
@@ -140,7 +155,7 @@ func (bot *Bot) Respond(re *regexp.Regexp, action func(ctx context.Context, res 
 			return nil
 		}
 		res := bot.NewResponse(msg)
-		res.SetMatch(match)
+		res.setMatch(match)
 		return action(context.Background(), res)
 	}
 	bot.responds = append(bot.responds, f)
@@ -181,6 +196,7 @@ func (bot *Bot) handleMessageEvent(ev *slack.MessageEvent) {
 	bot.Log("MessageEvent: done")
 }
 
+// Loaded indicates wheter the bot is loaded or not
 func (bot *Bot) Loaded() bool {
 	return bot.loaded
 }
@@ -276,7 +292,7 @@ func (bot *Bot) NewResponse(msg *slack.Message) *Response {
 	return res
 }
 
-func (res *Response) SetMatch(match []string) {
+func (res *Response) setMatch(match []string) {
 	res.match = match
 }
 
@@ -305,11 +321,12 @@ func (res *Response) Send(ctx context.Context, msg string) error {
 	return nil
 }
 
+// Brain is the interface to a key value storage for bots
 type Brain interface {
 	Load(ctx context.Context, key string) ([]byte, error)
 	Save(ctx context.Context, key string, val []byte) error
 }
 
-func NewBrain() (Brain, error) {
+func newBrain() (Brain, error) {
 	return brain.NewOnMemoryBrain(), nil
 }

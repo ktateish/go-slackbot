@@ -4,16 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v7"
-	"github.com/ktateish/go-slackbot/iface/iredis/v7"
 )
 
-type RedisBrain struct {
-	rc iredis.Client
+type RedisClient interface {
+	Get(key string) *redis.StringCmd
+	Ping() *redis.StatusCmd
+	ProcessContext(ctx context.Context, cmd redis.Cmder) error
+	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 }
 
-func NewRedisBrain(rc iredis.Client) (*RedisBrain, error) {
+type RedisBrain struct {
+	rc RedisClient
+}
+
+func NewRedisBrain(rc RedisClient) (*RedisBrain, error) {
 	_, err := rc.Ping().Result()
 	if err != nil {
 		return nil, fmt.Errorf("initial checking: %w", err)

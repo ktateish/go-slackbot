@@ -3,12 +3,11 @@ package slackbot
 import (
 	"testing"
 
-	"github.com/ktateish/go-slackbot/iface/islack"
 	"github.com/nlopes/slack"
 )
 
 type mockRTM struct {
-	islack.RTM
+	RTM
 	channels       map[string]bool
 	IncomingEvents chan slack.RTMEvent
 }
@@ -44,7 +43,7 @@ func TestBot_IncomingEvents(t *testing.T) {
 	}
 
 	wrong := &struct {
-		islack.RTM
+		RTM
 		IncomingEvents chan string
 	}{}
 	bot, err = NewBot(wrong)
@@ -56,7 +55,7 @@ func TestBot_IncomingEvents(t *testing.T) {
 		t.Errorf("IncomingEvents() failed for wrong type object\n")
 	}
 
-	empty := &struct{ islack.RTM }{}
+	empty := &struct{ RTM }{}
 	bot, err = NewBot(empty)
 	if err != nil {
 		t.Fatalf("NewBot() failed: %s\n", err)

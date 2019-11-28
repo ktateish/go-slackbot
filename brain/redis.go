@@ -46,7 +46,7 @@ func (br *RedisBrain) Load(ctx context.Context, key string) ([]byte, error) {
 		if errors.Is(err, redis.Nil) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("converting fetched result: %w", key, err)
+		return nil, fmt.Errorf("converting fetched result: %w", err)
 	}
 	return v, err
 }
